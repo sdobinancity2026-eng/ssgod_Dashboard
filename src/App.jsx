@@ -34,25 +34,18 @@ export default function App() {
 
   const [session, setSession] = useState(null);
 
-useEffect(() => {
-  supabase.auth.getSession().then(({ data: { session } }) => {
-    setSession(session);
-  });
+  // Auth session initialization
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
 
-  const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-    setSession(session);
-  });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
 
-  return () => subscription.unsubscribe();
-}, []);
-
-const handleSignOut = async () => {
-  await supabase.auth.signOut();
-};
-
-if (!session) {
-  return <Login onLoginSuccess={(sess) => setSession(sess)} />;
-}
+    return () => subscription.unsubscribe();
+  }, []);
 
   const fetchData = async () => {
     setLoading(true);
@@ -74,9 +67,21 @@ if (!session) {
     }
   };
 
+  // Fetch data only when session becomes active
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (session) {
+      fetchData();
+    }
+  }, [session]);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  // Guard clause after all hooks are declared
+  if (!session) {
+    return <Login onLoginSuccess={(sess) => setSession(sess)} />;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -161,7 +166,10 @@ if (!session) {
         </nav>
 
         <div className="p-4 border-t border-blue-900">
-          <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-red-200 hover:bg-red-500/20 transition-all">
+          <button 
+            onClick={handleSignOut}
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-red-200 hover:bg-red-500/20 transition-all"
+          >
             <LogOut size={18} /> Sign Out
           </button>
         </div>
