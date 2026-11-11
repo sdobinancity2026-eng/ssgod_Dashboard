@@ -31,6 +31,28 @@ export default function App() {
     status: 'Pending Review'
   });
 
+  const [session, setSession] = useState(null);
+
+useEffect(() => {
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    setSession(session);
+  });
+
+  const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    setSession(session);
+  });
+
+  return () => subscription.unsubscribe();
+}, []);
+
+const handleSignOut = async () => {
+  await supabase.auth.signOut();
+};
+
+if (!session) {
+  return <Login onLoginSuccess={(sess) => setSession(sess)} />;
+}
+
   const fetchData = async () => {
     setLoading(true);
     try {
