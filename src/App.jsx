@@ -16,7 +16,8 @@ import {
   Award,
   BookOpen,
   Plus,
-  Loader2
+  Loader2,
+  Download
 } from 'lucide-react';
 
 export default function App() {
@@ -67,18 +68,30 @@ export default function App() {
     }
   };
 
-  // Fetch data only when session becomes active
+  // Fetch data and configure Real-Time WebSockets subscription when session is active
   useEffect(() => {
-    if (session) {
-      fetchData();
-    }
+    if (!session) return;
+
+    fetchData();
+
+    // Supabase Realtime Channel for live automatic updates
+    const channel = supabase
+      .channel('public:activities')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, () => {
+        fetchData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [session]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
   };
 
-  // Guard clause after all hooks are declared
+  // Guard clause after hooks are declared
   if (!session) {
     return <Login onLoginSuccess={(sess) => setSession(sess)} />;
   }
@@ -99,17 +112,37 @@ export default function App() {
     if (!error) {
       setShowModal(false);
       setFormData({ school_name: '', program_activity: '', status: 'Pending Review' });
-      fetchData();
     }
   };
 
   const handleUpdateStatus = async (id, newStatus) => {
-    const { error } = await supabase
+    await supabase
       .from('activities')
       .update({ status: newStatus })
       .eq('id', id);
+  };
 
-    if (!error) fetchData();
+  // CSV Export Function
+  const exportToCSV = () => {
+    const headers = ['School / Unit', 'Program / Activity', 'Status', 'Date Submitted'];
+    const csvRows = [headers.join(',')];
+    
+    activities.forEach(item => {
+      const row = [
+        `"${item.school_name || ''}"`,
+        `"${item.program_activity || ''}"`,
+        `"${item.status || ''}"`,
+        `"${item.date_submitted || ''}"`
+      ];
+      csvRows.push(row.join(','));
+    });
+
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('href', url);
+    a.setAttribute('download', `SGOD_Activities_Report_${new Date().toISOString().split('T')[0]}.csv`);
+    a.click();
   };
 
   return (
@@ -213,14 +246,22 @@ export default function App() {
               <div className="mb-8 flex justify-between items-center">
                 <div>
                   <h2 className="text-2xl font-bold text-slate-800">Schools Division Dashboard</h2>
-                  <p className="text-sm text-slate-500">Live operation data synced directly with Supabase database.</p>
+                  <p className="text-sm text-slate-500">Live operational data synced via Supabase WebSockets.</p>
                 </div>
-                <button 
-                  onClick={() => setShowModal(true)}
-                  className="px-4 py-2 bg-[#003366] text-yellow-400 rounded-lg text-sm font-semibold hover:bg-blue-900 shadow flex items-center gap-2"
-                >
-                  <Plus size={16} /> Add New Record
-                </button>
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={exportToCSV}
+                    className="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50 shadow-sm flex items-center gap-2"
+                  >
+                    <Download size={16} /> Export CSV
+                  </button>
+                  <button 
+                    onClick={() => setShowModal(true)}
+                    className="px-4 py-2 bg-[#003366] text-yellow-400 rounded-lg text-sm font-semibold hover:bg-blue-900 shadow flex items-center gap-2"
+                  >
+                    <Plus size={16} /> Add New Record
+                  </button>
+                </div>
               </div>
 
               {/* STATS CARDS */}
