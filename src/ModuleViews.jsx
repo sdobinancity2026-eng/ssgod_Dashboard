@@ -44,7 +44,6 @@ export function SchoolManagementView() {
 
       {/* FILTERS & SEARCH */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-4 justify-between items-center">
-        <div className="relative flex-1 min-w-[240px]">
           <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
           <input 
             type="text" 
@@ -53,7 +52,6 @@ export function SchoolManagementView() {
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003366]"
           />
-        </div>
         <div className="flex items-center gap-2">
           <Filter size={18} className="text-slate-400" />
           <select 
