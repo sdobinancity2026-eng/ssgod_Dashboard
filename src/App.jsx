@@ -98,6 +98,13 @@ export default function App() {
     return <Login onLoginSuccess={(sess) => setSession(sess)} />;
   }
 
+  // Check if current user is Super Admin (via metadata role or specific admin email)
+  const userRole = session.user?.user_metadata?.role || '';
+  const userEmail = session.user?.email || '';
+  
+  // You can adjust this condition based on your Super Admin email or role metadata
+  const isSuperAdmin = userRole === 'Super Admin' || userEmail === 'sdobinansde@gmail.com';
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.school_name || !formData.program_activity) return;
@@ -198,14 +205,17 @@ export default function App() {
           >
             <FileSpreadsheet size={20} /> Physical Facilities
           </button>
-        </nav>
 
-        <button 
-            onClick={() => setActiveTab('users')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activeTab === 'users' ? 'bg-yellow-400 text-[#003366] font-semibold shadow-md' : 'text-blue-100 hover:bg-blue-900/50'}`}
-          >
-            <UserCog size={20} /> User Accounts
-        </button>
+          {/* SUPER ADMIN ONLY TAB */}
+          {isSuperAdmin && (
+            <button 
+              onClick={() => setActiveTab('users')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activeTab === 'users' ? 'bg-yellow-400 text-[#003366] font-semibold shadow-md' : 'text-blue-100 hover:bg-blue-900/50'}`}
+            >
+              <UserCog size={20} /> User Accounts
+            </button>
+          )}
+        </nav>
 
         <div className="p-4 border-t border-blue-900">
           <button 
@@ -241,7 +251,9 @@ export default function App() {
                 SG
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-800">Admin User</p>
+                <p className="text-sm font-semibold text-slate-800">
+                  {isSuperAdmin ? 'Super Admin' : 'Admin User'}
+                </p>
                 <p className="text-xs text-slate-500">SGOD Division</p>
               </div>
             </div>
@@ -381,7 +393,8 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'users' && <UserManagementView />}
+          {/* RENDER USER MANAGEMENT ONLY FOR SUPER ADMIN */}
+          {activeTab === 'users' && isSuperAdmin && <UserManagementView />}
         </main>
       </div>
 
