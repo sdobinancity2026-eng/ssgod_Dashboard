@@ -178,8 +178,8 @@ export default function App() {
       {/* SIDEBAR */}
       <aside className="w-64 bg-[#003366] text-white flex flex-col shadow-xl">
         <div className="p-5 border-b border-blue-900 flex items-center gap-3">
-          <div className="bg-yellow-400 p-2 rounded-lg text-[#003366] font-bold">
-            <BookOpen size={24} />
+          <div className="bg-white p-1 rounded-lg w-10 h-10 flex items-center justify-center shadow">
+            <img src="/sanay-logo.png" alt="SANAY Logo" className="w-8 h-8 object-contain" />
           </div>
           <div>
             <h1 className="font-bold text-lg leading-tight">SGOD Dashboard</h1>
