@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
-import { UserPlus, Shield, Mail, Lock, Loader2, CheckCircle2, Users } from 'lucide-react';
+import { UserPlus, Shield, Mail, Lock, Loader2, CheckCircle2, Users, User } from 'lucide-react';
 
 export function UserManagementView() {
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('Division Coordinator');
@@ -39,16 +40,20 @@ export function UserManagementView() {
         email,
         password,
         options: {
-          data: { role }
+          data: { 
+            role,
+            full_name: fullName 
+          }
         }
       });
 
       if (error) throw error;
 
-      setSuccessMsg(`Successfully created account for ${email}!`);
+      setSuccessMsg(`Successfully created account for ${fullName} (${email})!`);
+      setFullName('');
       setEmail('');
       setPassword('');
-      fetchProfiles(); // Refresh the directory table
+      fetchProfiles();
     } catch (err) {
       setErrorMsg(err.message);
     } finally {
@@ -71,7 +76,7 @@ export function UserManagementView() {
     <div className="space-y-8 max-w-4xl mx-auto">
       <div>
         <h2 className="text-2xl font-bold text-slate-800">User & Role Management</h2>
-        <p className="text-sm text-slate-500">Provision authorized credentials and manage access privileges across SGOD.</p>
+        <p className="text-sm text-slate-500">Provision credentials and manage access privileges across division personnel.</p>
       </div>
 
       {/* CREATE USER FORM */}
@@ -82,7 +87,7 @@ export function UserManagementView() {
           </div>
           <div>
             <h3 className="font-bold text-slate-800 text-lg">Create New System User</h3>
-            <p className="text-xs text-slate-500">Accounts automatically sync to the division directory.</p>
+            <p className="text-xs text-slate-500">Accounts sync instantly to the division profile directory.</p>
           </div>
         </div>
 
@@ -98,7 +103,22 @@ export function UserManagementView() {
           </div>
         )}
 
-        <form onSubmit={handleCreateUser} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        <form onSubmit={handleCreateUser} className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Full Name</label>
+            <div className="relative">
+              <User className="absolute left-3 top-2.5 text-slate-400" size={18} />
+              <input 
+                type="text" 
+                required
+                placeholder="e.g. Juan Dela Cruz"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003366]"
+              />
+            </div>
+          </div>
+
           <div>
             <label className="block text-xs font-semibold text-slate-600 mb-1">Email Address</label>
             <div className="relative">
@@ -106,7 +126,7 @@ export function UserManagementView() {
               <input 
                 type="email" 
                 required
-                placeholder="coordinator@deped.gov.ph"
+                placeholder="name@deped.gov.ph"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003366]"
@@ -145,7 +165,7 @@ export function UserManagementView() {
             </div>
           </div>
 
-          <div className="md:col-span-3 pt-2">
+          <div className="md:col-span-2 pt-2">
             <button 
               type="submit" 
               disabled={loading}
@@ -171,16 +191,17 @@ export function UserManagementView() {
           <table className="w-full text-left border-collapse text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-slate-400 font-semibold">
-                <th className="pb-3">User Email</th>
+                <th className="pb-3">Full Name</th>
+                <th className="pb-3">Email</th>
                 <th className="pb-3">Assigned Role</th>
-                <th className="pb-3">Date Provisioned</th>
                 <th className="pb-3 text-right">Change Role</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
               {profiles.map((profile) => (
                 <tr key={profile.id}>
-                  <td className="py-4 font-medium text-slate-900">{profile.email}</td>
+                  <td className="py-4 font-medium text-slate-900">{profile.full_name || 'N/A'}</td>
+                  <td className="py-4 text-slate-500">{profile.email}</td>
                   <td className="py-4">
                     <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
                       profile.role === 'Super Admin' 
@@ -191,9 +212,6 @@ export function UserManagementView() {
                     }`}>
                       {profile.role}
                     </span>
-                  </td>
-                  <td className="py-4 text-slate-500">
-                    {new Date(profile.created_at).toLocaleDateString()}
                   </td>
                   <td className="py-4 text-right">
                     <select

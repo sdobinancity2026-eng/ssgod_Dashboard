@@ -36,19 +36,38 @@ export default function App() {
   });
 
   const [session, setSession] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
 
-  // Auth session initialization
+  // Auth session initialization & Profile Fetching
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      if (session) fetchUserProfile(session.user.id);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (session) {
+        fetchUserProfile(session.user.id);
+      } else {
+        setUserProfile(null);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchUserProfile = async (userId) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (!error && data) {
+      setUserProfile(data);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -70,13 +89,11 @@ export default function App() {
     }
   };
 
-  // Fetch data and configure Real-Time WebSockets subscription when session is active
   useEffect(() => {
     if (!session) return;
 
     fetchData();
 
-    // Supabase Realtime Channel for live automatic updates
     const channel = supabase
       .channel('public:activities')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, () => {
@@ -93,17 +110,14 @@ export default function App() {
     await supabase.auth.signOut();
   };
 
-  // Guard clause after hooks are declared
   if (!session) {
-    return <Login onLoginSuccess={(sess) => setSession(sess)} />;
+    return <Login onLoginSuccess={(sess) => {
+      setSession(sess);
+      if (sess) fetchUserProfile(sess.user.id);
+    }} />;
   }
 
-  // Check if current user is Super Admin (via metadata role or specific admin email)
-  const userRole = session.user?.user_metadata?.role || '';
-  const userEmail = session.user?.email || '';
-  
-  // You can adjust this condition based on your Super Admin email or role metadata
-  const isSuperAdmin = userRole === 'Super Admin' || userEmail === 'sdobinansde@gmail.com';
+  const isSuperAdmin = userProfile?.role === 'Super Admin' || session.user?.email === 'sdobinansde@gmail.com';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -131,7 +145,6 @@ export default function App() {
       .eq('id', id);
   };
 
-  // CSV Export Function
   const exportToCSV = () => {
     const headers = ['School / Unit', 'Program / Activity', 'Status', 'Date Submitted'];
     const csvRows = [headers.join(',')];
@@ -152,6 +165,12 @@ export default function App() {
     a.setAttribute('href', url);
     a.setAttribute('download', `SGOD_Activities_Report_${new Date().toISOString().split('T')[0]}.csv`);
     a.click();
+  };
+
+  // Get initials for avatar
+  const getInitials = (name) => {
+    if (!name) return 'SG';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
   };
 
   return (
@@ -206,7 +225,6 @@ export default function App() {
             <FileSpreadsheet size={20} /> Physical Facilities
           </button>
 
-          {/* SUPER ADMIN ONLY TAB */}
           {isSuperAdmin && (
             <button 
               onClick={() => setActiveTab('users')}
@@ -248,13 +266,13 @@ export default function App() {
             </button>
             <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
               <div className="w-9 h-9 rounded-full bg-[#003366] text-yellow-400 font-bold flex items-center justify-center text-sm shadow">
-                SG
+                {getInitials(userProfile?.full_name)}
               </div>
               <div>
                 <p className="text-sm font-semibold text-slate-800">
-                  {isSuperAdmin ? 'Super Admin' : 'Admin User'}
+                  {userProfile?.full_name || 'Division Personnel'}
                 </p>
-                <p className="text-xs text-slate-500">SGOD Division</p>
+                <p className="text-xs text-slate-500">{userProfile?.role || 'SGOD Division'}</p>
               </div>
             </div>
           </div>
@@ -393,7 +411,6 @@ export default function App() {
             />
           )}
 
-          {/* RENDER USER MANAGEMENT ONLY FOR SUPER ADMIN */}
           {activeTab === 'users' && isSuperAdmin && <UserManagementView />}
         </main>
       </div>
