@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
 import Login from './Login';
 import { SchoolManagementView, MonitoringEvaluationView, GenericUnitView } from './ModuleViews';
+import { UserManagementView } from './UserManagementView';
 import { 
   LayoutDashboard, 
   School, 
@@ -17,7 +18,8 @@ import {
   BookOpen,
   Plus,
   Loader2,
-  Download
+  Download,
+  UserCog
 } from 'lucide-react';
 
 export default function App() {
@@ -198,6 +200,13 @@ export default function App() {
           </button>
         </nav>
 
+        <button 
+            onClick={() => setActiveTab('users')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activeTab === 'users' ? 'bg-yellow-400 text-[#003366] font-semibold shadow-md' : 'text-blue-100 hover:bg-blue-900/50'}`}
+          >
+            <UserCog size={20} /> User Accounts
+        </button>
+
         <div className="p-4 border-t border-blue-900">
           <button 
             onClick={handleSignOut}
@@ -371,6 +380,8 @@ export default function App() {
               description="Monitor school building repairs, classroom inventory, and infrastructure projects." 
             />
           )}
+
+          {activeTab === 'users' && <UserManagementView />}
         </main>
       </div>
 
